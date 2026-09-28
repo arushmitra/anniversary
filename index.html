@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happy Anniversary baby</title>
+<style>
+  :root {
+    --bg: #fde8ee;
+    --heart: #f4a9bd;
+    --ink: #7a2e48;
+    --button: #e4799a;
+    --button-hover: #d4638a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: clamp(1.5rem, 5vh, 3rem);
+    padding: 2rem 1.25rem;
+    text-align: center;
+    background-color: var(--bg);
+    /* two offset layers of tiny hearts so the pattern doesn't look like a grid */
+    background-image:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140' viewBox='0 0 140 140'%3E%3Cg fill='%23f4a9bd'%3E%3Cpath transform='translate(14 18) scale(.75)' opacity='.55' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3Cpath transform='translate(88 70) scale(.5)' opacity='.45' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/g%3E%3C/svg%3E"),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190' viewBox='0 0 190 190'%3E%3Cg fill='%23f4a9bd'%3E%3Cpath transform='translate(120 24) scale(.6)' opacity='.5' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3Cpath transform='translate(40 110) scale(.42)' opacity='.4' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3Cpath transform='translate(150 140) scale(.8)' opacity='.5' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 140px 140px, 190px 190px;
+  }
+  h1 {
+    margin: 0;
+    max-width: 14ch;
+    font-family: "Times New Roman", Times, serif;
+    font-weight: 700;
+    font-size: clamp(3.25rem, 11vw + 0.5rem, 9rem);
+    line-height: 1.02;
+    color: var(--ink);
+    text-wrap: balance;
+  }
+  @media (min-width: 900px) and (min-aspect-ratio: 4/3) {
+    h1 { max-width: 18ch; }
+  }
+  .gallery {
+    font-family: "Times New Roman", Times, serif;
+    font-size: clamp(1.25rem, 2.2vw + 0.6rem, 1.75rem);
+    color: #fff;
+    background: var(--button);
+    text-decoration: none;
+    padding: 0.75em 2.4em;
+    border-radius: 999px;
+    box-shadow: 0 6px 18px rgba(228, 121, 154, 0.35);
+    transition: background 0.2s, transform 0.2s;
+  }
+  .gallery:hover { background: var(--button-hover); transform: translateY(-2px); }
+  .gallery:active { transform: translateY(0); }
+  .gallery:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+  @media (prefers-reduced-motion: reduce) {
+    .gallery { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <h1>Happy Anniversary baby</h1>
+  <a class="gallery" href="gallery.html">Gallery</a>
+</body>
+</html>
