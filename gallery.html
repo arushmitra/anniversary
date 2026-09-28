@@ -104,8 +104,26 @@
         if (p.length) return p;
       }
     } catch (e) {}
+    // Fallback: probe for numbered files like 1.jpeg, 2.JPG ... (no GitHub API needed)
+    const p = await probeNumbered();
+    if (p.length) return p;
     isDemo = true;
     return demoPhotos(9);
+  }
+
+  async function probe(n) {
+    for (const ext of ['jpeg', 'JPG', 'jpg', 'JPEG', 'png', 'PNG', 'webp']) {
+      const src = n + '.' + ext;
+      try {
+        const r = await fetch(src, { method: 'HEAD' });
+        if (r.ok) return { src, name: src };
+      } catch (e) {}
+    }
+    return null;
+  }
+  async function probeNumbered() {
+    const res = await Promise.all(Array.from({ length: 100 }, (_, i) => probe(i + 1)));
+    return res.filter(Boolean);
   }
 
   function caption(p) {
@@ -185,7 +203,7 @@
       stage.appendChild(el);
       items.push(el);
     });
-    cur = Math.floor(photos.length / 2);
+    cur = 0;
     layout();
   });
 </script>
