@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gallery</title>
+<style>
+  :root { --s: min(72vw, 50vh, 520px); --pink: #e4799a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    background: radial-gradient(ellipse at 50% 30%, #2b2b35 0%, #0b0b0f 72%);
+    color: #fff;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-user-select: none; user-select: none;
+  }
+  .back {
+    position: fixed; z-index: 10;
+    top: max(14px, env(safe-area-inset-top)); left: 16px;
+    color: #fff; text-decoration: none; font-size: 1rem;
+    padding: .5em 1em; border-radius: 999px; background: rgba(255,255,255,.14);
+  }
+  .back:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .stage {
+    position: absolute; left: 0; right: 0; top: 0; bottom: 150px;
+    perspective: 1100px; perspective-origin: 50% 40%;
+    overflow: hidden; touch-action: pan-y;
+  }
+  .item {
+    position: absolute; left: 50%; top: 46%;
+    width: var(--s); height: var(--s);
+    margin: calc(var(--s) / -2) 0 0 calc(var(--s) / -2);
+    display: flex; align-items: flex-end; justify-content: center;
+    transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .4s;
+    will-change: transform; cursor: pointer;
+  }
+  .item img {
+    max-width: 100%; max-height: 100%; display: block; pointer-events: none;
+    -webkit-user-drag: none;
+    -webkit-box-reflect: below 1px linear-gradient(to bottom, transparent 62%, rgba(255,255,255,.3));
+  }
+  .panel {
+    position: fixed; left: 0; right: 0; bottom: 0; text-align: center;
+    padding: 0 1.5rem max(18px, env(safe-area-inset-bottom));
+  }
+  .title { font-size: clamp(1.1rem, 2.4vw + .5rem, 1.6rem); font-weight: 600; min-height: 1.3em; }
+  .count { font-size: clamp(1rem, 2vw + .4rem, 1.4rem); font-weight: 600; color: #ddd; margin-bottom: 14px; }
+  input[type=range] { width: min(560px, 86vw); accent-color: var(--pink); }
+</style>
+</head>
+<body>
+  <a class="back" href="index.html">&larr; Back</a>
+  <div class="stage" id="stage"></div>
+  <div class="panel">
+    <div class="title" id="title"></div>
+    <div class="count" id="count"></div>
+    <input type="range" id="scrub" min="0" max="0" value="0" aria-label="Scroll through photos">
+  </div>
+
+<script>
+  // Photos are read from the "photos" folder of this GitHub repo.
+  const OWNER = 'arushmitra', REPO = 'anniversary';
+  // Looks in the "photos" folder first, then in the main folder of the repo.
+  const FOLDERS = ['photos', ''];
+  const IMG_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
+
+  const stage = document.getElementById('stage');
+  const titleEl = document.getElementById('title');
+  const countEl = document.getElementById('count');
+  const scrub = document.getElementById('scrub');
+  let photos = [], items = [], cur = 0, isDemo = false;
+
+  function demoPhotos(n) {
+    const heart = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
+    const hues = [340, 350, 330, 345, 355];
+    return Array.from({ length: n }, (_, i) => {
+      const h = hues[i % 5];
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><rect width='600' height='600' fill='hsl(${h},80%,88%)'/><path transform='translate(150 130) scale(12.5)' fill='hsl(${h},70%,72%)' d='${heart}'/><text x='300' y='540' text-anchor='middle' font-family='Times New Roman' font-size='40' fill='#7a2e48'>Photo ${i + 1}</text></svg>`;
+      return { src: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg), name: '' };
+    });
+  }
+
+  function toPhotos(names, folder) {
+    return names.filter(n => IMG_RE.test(n))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+      .map(n => ({ src: (folder ? folder + '/' : '') + encodeURIComponent(n), name: n }));
+  }
+
+  async function load() {
+    for (const folder of FOLDERS) {
+      try {
+        const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${folder}`);
+        if (r.ok) {
+          const list = await r.json();
+          const p = toPhotos(list.filter(f => f.type === 'file').map(f => f.name), folder);
+          if (p.length) return p;
+        }
+      } catch (e) {}
+    }
+    try {
+      const r = await fetch('photos.json');   // optional fallback: ["a.jpg","b.jpg"]
+      if (r.ok) {
+        const p = toPhotos(await r.json(), '');
+        if (p.length) return p;
+      }
+    } catch (e) {}
+    isDemo = true;
+    return demoPhotos(9);
+  }
+
+  function caption(p) {
+    if (isDemo) return 'Add photos to the "photos" folder';
+    const base = p.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
+    if (!base || /^(img|dsc|pxl|image|photo|screenshot|whatsapp|\d)/i.test(base)) return 'Us \u2665';
+    return base;
+  }
+
+  function layout() {
+    const S = items[0].offsetWidth || 400;
+    items.forEach((el, i) => {
+      const d = i - cur, a = Math.abs(d), s = Math.sign(d);
+      let x = 0, z = 110, r = 0;
+      if (d !== 0) {
+        x = s * (S * 0.72 + (a - 1) * S * 0.16);
+        z = -40 - a * 8;
+        r = -s * 68;
+      }
+      el.style.transform = `translateX(${x}px) translateZ(${z}px) rotateY(${r}deg)`;
+      el.style.zIndex = 100 - a;
+      el.style.opacity = a > 7 ? 0 : 1;
+      el.style.pointerEvents = a > 7 ? 'none' : 'auto';
+      const img = el.firstChild;
+      if (a <= 8 && !img.getAttribute('src')) img.src = photos[i].src;
+    });
+    titleEl.textContent = caption(photos[cur]);
+    countEl.textContent = `${cur + 1} of ${photos.length}`;
+    scrub.value = cur;
+  }
+
+  function go(i) {
+    cur = Math.max(0, Math.min(photos.length - 1, i));
+    layout();
+  }
+
+  let dragStart = null, moved = false;
+  stage.addEventListener('pointerdown', e => { dragStart = e.clientX; moved = false; });
+  window.addEventListener('pointermove', e => {
+    if (dragStart === null) return;
+    const dx = e.clientX - dragStart;
+    if (Math.abs(dx) > 50) { go(cur + (dx < 0 ? 1 : -1)); dragStart = e.clientX; moved = true; }
+  });
+  window.addEventListener('pointerup', () => { dragStart = null; });
+  window.addEventListener('pointercancel', () => { dragStart = null; });
+
+  let lastWheel = 0;
+  stage.addEventListener('wheel', e => {
+    e.preventDefault();
+    const now = Date.now();
+    if (now - lastWheel < 110) return;
+    lastWheel = now;
+    const d = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (Math.abs(d) > 2) go(cur + (d > 0 ? 1 : -1));
+  }, { passive: false });
+
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') go(cur + 1);
+    else if (e.key === 'ArrowLeft') go(cur - 1);
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(photos.length - 1);
+  });
+  scrub.addEventListener('input', () => go(+scrub.value));
+  window.addEventListener('resize', layout);
+
+  load().then(p => {
+    photos = p;
+    scrub.max = photos.length - 1;
+    photos.forEach((ph, i) => {
+      const el = document.createElement('div');
+      el.className = 'item';
+      const img = document.createElement('img');
+      img.alt = 'Photo ' + (i + 1);
+      img.decoding = 'async';
+      el.appendChild(img);
+      el.addEventListener('click', () => { if (moved) { moved = false; return; } go(i); });
+      stage.appendChild(el);
+      items.push(el);
+    });
+    cur = Math.floor(photos.length / 2);
+    layout();
+  });
+</script>
+</body>
+</html>
