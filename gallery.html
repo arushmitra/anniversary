@@ -21,6 +21,14 @@
     padding: .5em 1em; border-radius: 999px; background: rgba(255,255,255,.14);
   }
   .back:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+  .music {
+    position: fixed; z-index: 10;
+    top: max(14px, env(safe-area-inset-top)); right: 16px;
+    width: 44px; height: 44px; border-radius: 999px;
+    background: rgba(255,255,255,.14); border: none; color: #fff;
+    font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .music:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
   .stage {
     position: absolute; left: 0; right: 0; top: 0; bottom: 150px;
     perspective: 1100px; perspective-origin: 50% 40%;
@@ -50,6 +58,8 @@
 </head>
 <body>
   <a class="back" href="index.html">&larr; Back</a>
+  <button class="music" id="musicBtn" aria-label="Play music" aria-pressed="false">&#9835;</button>
+  <audio id="bgAudio" src="01_her.mp3" loop preload="auto"></audio>
   <div class="stage" id="stage"></div>
   <div class="panel">
     <div class="title" id="title"></div>
@@ -58,80 +68,24 @@
   </div>
 
 <script>
-  // Photos are read from the "photos" folder of this GitHub repo.
-  const OWNER = 'arushmitra', REPO = 'anniversary';
-  // Looks in the "photos" folder first, then in the main folder of the repo.
-  const FOLDERS = ['photos', ''];
-  const IMG_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
+  // Hardcoded from the actual repo file list (github.com/arushmitra/anniversary).
+  // The 7 HEIC files (34, 36, 38, 40, 41, 46, 47) are left out until they're
+  // converted to JPG - browsers can't display HEIC. Once converted, add them
+  // to this list (e.g. '34.jpg') and re-upload this file.
+  const FILES = [
+    '1.JPG','2.JPG','3.JPG','4.jpeg','5.jpeg','6.jpeg','7.jpeg','8.jpeg','9.jpeg',
+    '10.jpeg','11.jpeg','12.jpeg','13.jpeg','14.jpeg','15.jpeg','16.jpeg','17.jpeg',
+    '18.jpeg','19.jpeg','20.jpeg','21.jpeg','22.jpeg','23.jpeg','24.jpeg','25.jpeg',
+    '26.jpeg','27.jpeg','28.jpeg','29.jpeg','30.jpeg','31.jpeg','32.jpeg','33.jpeg',
+    '35.jpeg','37.jpeg','39.jpeg','42.jpeg','43.jpg','44.JPG','45.JPG','48.JPEG'
+  ];
 
   const stage = document.getElementById('stage');
   const titleEl = document.getElementById('title');
   const countEl = document.getElementById('count');
   const scrub = document.getElementById('scrub');
-  let photos = [], items = [], cur = 0, isDemo = false;
-
-  function demoPhotos(n) {
-    const heart = 'M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z';
-    const hues = [340, 350, 330, 345, 355];
-    return Array.from({ length: n }, (_, i) => {
-      const h = hues[i % 5];
-      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='600'><rect width='600' height='600' fill='hsl(${h},80%,88%)'/><path transform='translate(150 130) scale(12.5)' fill='hsl(${h},70%,72%)' d='${heart}'/><text x='300' y='540' text-anchor='middle' font-family='Times New Roman' font-size='40' fill='#7a2e48'>Photo ${i + 1}</text></svg>`;
-      return { src: 'data:image/svg+xml;utf8,' + encodeURIComponent(svg), name: '' };
-    });
-  }
-
-  function toPhotos(names, folder) {
-    return names.filter(n => IMG_RE.test(n))
-      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
-      .map(n => ({ src: (folder ? folder + '/' : '') + encodeURIComponent(n), name: n }));
-  }
-
-  async function load() {
-    for (const folder of FOLDERS) {
-      try {
-        const r = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${folder}`);
-        if (r.ok) {
-          const list = await r.json();
-          const p = toPhotos(list.filter(f => f.type === 'file').map(f => f.name), folder);
-          if (p.length) return p;
-        }
-      } catch (e) {}
-    }
-    try {
-      const r = await fetch('photos.json');   // optional fallback: ["a.jpg","b.jpg"]
-      if (r.ok) {
-        const p = toPhotos(await r.json(), '');
-        if (p.length) return p;
-      }
-    } catch (e) {}
-    // Fallback: probe for numbered files like 1.jpeg, 2.JPG ... (no GitHub API needed)
-    const p = await probeNumbered();
-    if (p.length) return p;
-    isDemo = true;
-    return demoPhotos(9);
-  }
-
-  async function probe(n) {
-    for (const ext of ['jpeg', 'JPG', 'jpg', 'JPEG', 'png', 'PNG', 'webp']) {
-      const src = n + '.' + ext;
-      try {
-        const r = await fetch(src, { method: 'HEAD' });
-        if (r.ok) return { src, name: src };
-      } catch (e) {}
-    }
-    return null;
-  }
-  async function probeNumbered() {
-    const res = await Promise.all(Array.from({ length: 100 }, (_, i) => probe(i + 1)));
-    return res.filter(Boolean);
-  }
-
-  function caption(p) {
-    if (isDemo) return 'Add photos to the "photos" folder';
-    const base = p.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').trim();
-    if (!base || /^(img|dsc|pxl|image|photo|screenshot|whatsapp|\d)/i.test(base)) return 'Us \u2665';
-    return base;
-  }
+  let photos = FILES.map(f => ({ src: encodeURIComponent(f) }));
+  let items = [], cur = 0;
 
   function layout() {
     const S = items[0].offsetWidth || 400;
@@ -150,7 +104,7 @@
       const img = el.firstChild;
       if (a <= 8 && !img.getAttribute('src')) img.src = photos[i].src;
     });
-    titleEl.textContent = caption(photos[cur]);
+    titleEl.textContent = 'Us \u2665';
     countEl.textContent = `${cur + 1} of ${photos.length}`;
     scrub.value = cur;
   }
@@ -189,22 +143,47 @@
   scrub.addEventListener('input', () => go(+scrub.value));
   window.addEventListener('resize', layout);
 
-  load().then(p => {
-    photos = p;
-    scrub.max = photos.length - 1;
-    photos.forEach((ph, i) => {
-      const el = document.createElement('div');
-      el.className = 'item';
-      const img = document.createElement('img');
-      img.alt = 'Photo ' + (i + 1);
-      img.decoding = 'async';
-      el.appendChild(img);
-      el.addEventListener('click', () => { if (moved) { moved = false; return; } go(i); });
-      stage.appendChild(el);
-      items.push(el);
-    });
-    cur = 0;
-    layout();
+  scrub.max = photos.length - 1;
+  photos.forEach((ph, i) => {
+    const el = document.createElement('div');
+    el.className = 'item';
+    const img = document.createElement('img');
+    img.alt = 'Photo ' + (i + 1);
+    img.decoding = 'async';
+    el.appendChild(img);
+    el.addEventListener('click', () => { if (moved) { moved = false; return; } go(i); });
+    stage.appendChild(el);
+    items.push(el);
+  });
+  cur = 0;
+  layout();
+
+  const audio = document.getElementById('bgAudio');
+  const musicBtn = document.getElementById('musicBtn');
+  let playing = false;
+
+  function setPlaying(p) {
+    playing = p;
+    musicBtn.textContent = playing ? '\u23F8' : '\u266B';
+    musicBtn.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+    musicBtn.setAttribute('aria-pressed', String(playing));
+  }
+
+  musicBtn.addEventListener('click', () => {
+    if (playing) { audio.pause(); setPlaying(false); }
+    else { audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false)); }
+  });
+
+  // Try to autoplay as soon as the page loads; most browsers block this
+  // until the visitor interacts, so fall back to starting on the first tap.
+  audio.play().then(() => setPlaying(true)).catch(() => {
+    const startOnce = () => {
+      audio.play().then(() => setPlaying(true)).catch(() => {});
+      window.removeEventListener('pointerdown', startOnce);
+      window.removeEventListener('keydown', startOnce);
+    };
+    window.addEventListener('pointerdown', startOnce, { once: true });
+    window.addEventListener('keydown', startOnce, { once: true });
   });
 </script>
 </body>
